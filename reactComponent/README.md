@@ -80,7 +80,20 @@ Copy this prompt into the coding agent you want to use inside your application r
 ```text
 Read the AIUI Assistant repository at https://github.com/cristianm-developer/aiui-assistant and use it as the source of truth for this integration.
 
-In this application repository, install the published npm package @cristianmpx/aiui-assistant with the existing package manager; inspect and use the compatible canonical skills and plugin manifests from ia-skills/; then run init-aiui-assistant (or the equivalent native skill command). The initialization must inspect the real frontend, style system, components, theme tokens, and conventions; create or synchronize iafrontrefassistant.config.ts and its confirmed prePrompt; persist the AIUI metadata contract in the active agent instructions; tag sections, logical wrappers, and reusable component roots without retagging existing elements or third-party components; add mountIaFrontRefAssistant(config) exactly once at the real browser entry point; and configure production metadata cleanup for the detected build system using AIUIReactAssistCleanup() for Vite/Astro or withAIUIReactAssistCleanup(nextConfig) for Next.js. Keep metadata in development/tests, remove it only from production HTML, preserve source files, keep the changes idempotent and narrowly scoped, ask only genuinely ambiguous decisions, and finish by running the relevant checks and reporting changed files and validation results. Do not install from Git unless I explicitly ask to test an unreleased change.
+In this application repository, install the published npm package
+@cristianmpx/aiui-assistant with the existing package manager. Do not install
+from Git unless I explicitly ask you to test an unreleased change. Inspect and
+register/use the compatible canonical skills and plugin manifests from
+`ia-skills/`, then run `init-aiui-assistant` or its equivalent native skill
+command. Let the initialization skill perform the complete integration: it
+handles project inspection, `iafrontrefassistant.config.ts`, required
+`prePrompt` and configuration questions, the persistent metadata rule,
+frontend tagging, the mount call, and production metadata cleanup for the
+detected build system. Include cleanup, keep metadata available in
+development/tests, remove it only from production HTML, and do not duplicate
+or bypass the init workflow. Keep changes idempotent and narrowly scoped;
+finish by running relevant checks and reporting changed files and validation
+results.
 ```
 
 ### Install and mount manually

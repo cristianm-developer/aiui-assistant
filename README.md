@@ -82,22 +82,29 @@ constraints or a preferred build command:
 ```text
 Read the AIUI Assistant repository at https://github.com/cristianm-developer/aiui-assistant and use it as the source of truth for this integration.
 
-In this application repository:
+In this application repository, install the published npm package
+@cristianmpx/aiui-assistant with the existing package manager. Do not install
+from Git unless I explicitly ask you to test an unreleased change.
 
-1. Install the published npm package @cristianmpx/aiui-assistant using the project's existing package manager. Do not install from Git unless I explicitly ask you to test an unreleased repository change.
-2. Inspect the repository's canonical ia-skills/ directory and the compatible plugin/skill manifests. Register or use the relevant AIUI skills and the init-aiui-assistant command according to this agent's native skill system; do not merely copy their files without reading and applying them.
-3. Run the AIUI initialization procedure in this application. It must inspect the real frontend structure, style system, component variants, theme tokens, and project conventions before editing.
-4. Create or synchronize iafrontrefassistant.config.ts, including a confirmed prePrompt when project conventions or skills should be included.
-5. Create or update the persistent AIUI frontend metadata rule in the active agent instruction file (AGENTS.md, CLAUDE.md, or the project's Cursor rule), without overwriting unrelated instructions. Preserve the section-versus-wrapper distinction and the component-root tagging rules.
-6. Add stable data-section-id, data-wrapper-id, data-component-id, and data-component-kind attributes where appropriate; preserve existing project attributes and do not retag already-tagged elements or third-party components.
-7. Add mountIaFrontRefAssistant(config) exactly once at the real browser entry point. Do not wrap the application tree, and do not add a separate CSS import.
-8. Configure production metadata cleanup for the detected build system: use AIUIReactAssistCleanup() for Vite/Astro, or withAIUIReactAssistCleanup(nextConfig) for Next.js. Keep AIUI metadata available in development and tests, remove it only from production HTML, and preserve source files. Use keepAttributes only if debugging metadata must remain in production.
+Inspect and register/use the compatible canonical skills and plugin manifests
+from the repository's `ia-skills/` directory, then run the
+`init-aiui-assistant` command or its equivalent native skill command. Let that
+initialization skill perform the complete integration: it is responsible for
+inspecting the project, creating or synchronizing `iafrontrefassistant.config.ts`,
+asking for any required `prePrompt` or configuration decisions, persisting the
+metadata rule, tagging frontend elements, adding the mount call, and
+configuring production metadata cleanup for the detected build system. Include
+the cleanup step; keep metadata available in development/tests and remove it
+only from production HTML.
 
-Ask me only about decisions that cannot be determined safely from the repository (for example, the intended prePrompt, an ambiguous app entry point, or whether selected debugging attributes should remain in production). Keep the changes idempotent and narrowly scoped. Before finishing, run the relevant typecheck, tests, and production build, then report every changed file, the cleanup integration, and any validation that could not be run.
+Do not duplicate the init skill's work manually or bypass its workflow. Keep
+the changes idempotent and narrowly scoped. Before finishing, run the relevant
+checks and report changed files, cleanup configuration, and validation results.
 ```
 
-This prompt makes the desired outcome explicit while leaving the agent free to
-adapt the integration to the application's framework and package manager.
+This prompt delegates the complete integration to the repository's canonical
+initialization workflow while leaving it free to adapt to the application's
+framework and package manager.
 
 ### Install and mount manually
 
