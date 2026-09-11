@@ -2,7 +2,7 @@
 
 A framework-agnostic floating visual widget for working with AI coding assistants. It lets you capture, tag, and generate prompts for UI elements in real time — drop it into any web app to get started.
 
-![Version](https://img.shields.io/badge/version-0.1.20-blue)
+![Version](https://img.shields.io/badge/version-0.1.21-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## What is it?
@@ -11,7 +11,9 @@ A framework-agnostic floating visual widget for working with AI coding assistant
 
 - 🎯 **Visual capture** of HTML elements via an interactive overlay
 - 📍 **Automatic tagging** of components and sections with data attributes
-- 💬 **Prompt generation** with code and configuration context
+- 💬 **Prompt generation** with code, configuration, route, and viewport context
+- 🖼️ **Optional visual captures** as clipboard attachments and local PNG files
+- 🧩 **Agent skill pack** for repeatable project initialization and metadata tagging
 - 🎨 **Customizable theming** via CSS tokens
 - ⚙️ **Per-component configuration** for variants and sizes
 
@@ -69,7 +71,35 @@ claude plugin install aiui-assistant@aiui-assistant --scope project --yes
 ```
 `enabledPlugins` only toggles a plugin that's already installed — it doesn't install it by itself, so the `claude plugin install ... --yes` step is still required once per machine/CI runner.
 
-## Basic Usage
+## How to use
+
+### Give this setup prompt to your AI coding agent
+
+Copy the following prompt into the coding agent you want to use inside your
+application repository. Replace the final sentence if you have project-specific
+constraints or a preferred build command:
+
+```text
+Read the AIUI Assistant repository at https://github.com/cristianm-developer/aiui-assistant and use it as the source of truth for this integration.
+
+In this application repository:
+
+1. Install the published npm package @cristianmpx/aiui-assistant using the project's existing package manager. Do not install from Git unless I explicitly ask you to test an unreleased repository change.
+2. Inspect the repository's canonical ia-skills/ directory and the compatible plugin/skill manifests. Register or use the relevant AIUI skills and the init-aiui-assistant command according to this agent's native skill system; do not merely copy their files without reading and applying them.
+3. Run the AIUI initialization procedure in this application. It must inspect the real frontend structure, style system, component variants, theme tokens, and project conventions before editing.
+4. Create or synchronize iafrontrefassistant.config.ts, including a confirmed prePrompt when project conventions or skills should be included.
+5. Create or update the persistent AIUI frontend metadata rule in the active agent instruction file (AGENTS.md, CLAUDE.md, or the project's Cursor rule), without overwriting unrelated instructions. Preserve the section-versus-wrapper distinction and the component-root tagging rules.
+6. Add stable data-section-id, data-wrapper-id, data-component-id, and data-component-kind attributes where appropriate; preserve existing project attributes and do not retag already-tagged elements or third-party components.
+7. Add mountIaFrontRefAssistant(config) exactly once at the real browser entry point. Do not wrap the application tree, and do not add a separate CSS import.
+8. Configure production metadata cleanup for the detected build system: use AIUIReactAssistCleanup() for Vite/Astro, or withAIUIReactAssistCleanup(nextConfig) for Next.js. Keep AIUI metadata available in development and tests, remove it only from production HTML, and preserve source files. Use keepAttributes only if debugging metadata must remain in production.
+
+Ask me only about decisions that cannot be determined safely from the repository (for example, the intended prePrompt, an ambiguous app entry point, or whether selected debugging attributes should remain in production). Keep the changes idempotent and narrowly scoped. Before finishing, run the relevant typecheck, tests, and production build, then report every changed file, the cleanup integration, and any validation that could not be run.
+```
+
+This prompt makes the desired outcome explicit while leaving the agent free to
+adapt the integration to the application's framework and package manager.
+
+### Install and mount manually
 
 Call `mountIaFrontRefAssistant()` once wherever your app boots — for example in `main.ts`, an Astro layout `<script>`, or a client-side lifecycle hook. It creates its own render root and portals the widget into `document.body`, so it doesn't need to wrap your app's JSX/template:
 
@@ -131,8 +161,12 @@ The prompt modal provides two formats:
 
 - **Copy reference** — readable text for a normal coding prompt.
 - **Copy JSON** — structured context for agents, scripts, and automation.
+- **Include visual capture** — optionally captures the target, previews it, copies it as an image, and saves a local PNG path in the prompt.
 
-Multiple requests for the same target are grouped into one prompt entry.
+Multiple requests for the same target are grouped into one prompt entry. When
+the queue is copied, entries are grouped by origin, route, and viewport and
+formatted as Markdown with separators between prompts; rich clipboard support
+also preserves attached images.
 
 ### Reference configuration
 
@@ -238,7 +272,8 @@ Returns `{ unmount() }` if you ever need to tear the widget down. Calling it mor
 - Holds all captured prompts
 - Editable textarea for refinements
 - If a config exists: variant and theme pickers
-- "Save" button copies to clipboard in a ready-to-use format
+- Optional visual capture with preview, image clipboard copy, and local PNG download
+- "Save" button copies a ready-to-use text/Markdown prompt; rich clipboard output preserves images when supported
 
 ## Styling and Theming
 
@@ -435,6 +470,18 @@ export interface AssistantConfig {
   show: { sections: boolean; wrappers: boolean; components: boolean };
 }
 
+export interface PromptImageAttachment {
+  type: 'image';
+  mimeType: 'image/png';
+  dataUrl: string;
+}
+
+export interface ViewportInfo {
+  width: number;
+  height: number;
+  devicePixelRatio: number;
+}
+
 // Assistant state
 export interface PromptEntry {
   id: string;
@@ -442,7 +489,10 @@ export interface PromptEntry {
   targetType: TargetType;
   url: string;
   text: string;
+  attachments?: PromptImageAttachment[];
+  viewport?: ViewportInfo;
   createdAt: number;
+  requestCount?: number;
 }
 ```
 

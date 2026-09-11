@@ -2,7 +2,7 @@
 
 A framework-agnostic floating visual widget for working with AI coding assistants. It lets you capture, tag, and generate prompts for UI elements in real time — drop it into any web app to get started.
 
-![Version](https://img.shields.io/badge/version-0.1.20-blue)
+![Version](https://img.shields.io/badge/version-0.1.21-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## What is it?
@@ -11,7 +11,9 @@ A framework-agnostic floating visual widget for working with AI coding assistant
 
 - 🎯 **Visual capture** of HTML elements via an interactive overlay
 - 📍 **Automatic tagging** of components and sections with data attributes
-- 💬 **Prompt generation** with code and configuration context
+- 💬 **Prompt generation** with code, configuration, route, and viewport context
+- 🖼️ **Optional visual captures** as clipboard attachments and local PNG files
+- 🧩 **Agent skill pack** for repeatable project initialization and metadata tagging
 - 🎨 **Customizable theming** via CSS tokens
 - ⚙️ **Per-component configuration** for variants and sizes
 
@@ -69,7 +71,19 @@ claude plugin install aiui-assistant@aiui-assistant --scope project --yes
 ```
 `enabledPlugins` only toggles a plugin that's already installed — it doesn't install it by itself, so the `claude plugin install ... --yes` step is still required once per machine/CI runner.
 
-## Basic Usage
+## How to use
+
+### Give this setup prompt to your AI coding agent
+
+Copy this prompt into the coding agent you want to use inside your application repository:
+
+```text
+Read the AIUI Assistant repository at https://github.com/cristianm-developer/aiui-assistant and use it as the source of truth for this integration.
+
+In this application repository, install the published npm package @cristianmpx/aiui-assistant with the existing package manager; inspect and use the compatible canonical skills and plugin manifests from ia-skills/; then run init-aiui-assistant (or the equivalent native skill command). The initialization must inspect the real frontend, style system, components, theme tokens, and conventions; create or synchronize iafrontrefassistant.config.ts and its confirmed prePrompt; persist the AIUI metadata contract in the active agent instructions; tag sections, logical wrappers, and reusable component roots without retagging existing elements or third-party components; add mountIaFrontRefAssistant(config) exactly once at the real browser entry point; and configure production metadata cleanup for the detected build system using AIUIReactAssistCleanup() for Vite/Astro or withAIUIReactAssistCleanup(nextConfig) for Next.js. Keep metadata in development/tests, remove it only from production HTML, preserve source files, keep the changes idempotent and narrowly scoped, ask only genuinely ambiguous decisions, and finish by running the relevant checks and reporting changed files and validation results. Do not install from Git unless I explicitly ask to test an unreleased change.
+```
+
+### Install and mount manually
 
 Call `mountIaFrontRefAssistant()` once wherever your app boots — for example in `main.ts`, an Astro layout `<script>`, or a client-side lifecycle hook. It creates its own render root and portals the widget into `document.body`, so it doesn't need to wrap your app's JSX/template:
 
@@ -129,8 +143,11 @@ The prompt modal provides two formats:
 
 - **Copy reference** — readable text for a normal coding prompt.
 - **Copy JSON** — structured context for agents, scripts, and automation.
+- **Include visual capture** — optionally captures the target, previews it, copies it as an image, and saves a local PNG path in the prompt.
 
-Multiple requests for the same target are grouped into one prompt entry.
+Multiple requests for the same target are grouped into one prompt entry. Queue
+copy groups entries by origin, route, and viewport and formats them as Markdown;
+rich clipboard output preserves attached images when supported.
 
 ### Reference configuration
 
@@ -213,7 +230,8 @@ Returns `{ unmount() }` if you ever need to tear the widget down. Calling it mor
 - Holds all captured prompts
 - Editable textarea for refinements
 - If a config exists: variant and theme pickers
-- "Save" button copies to clipboard in a ready-to-use format
+- Optional visual capture with preview, image clipboard copy, and local PNG download
+- "Save" button copies a ready-to-use text/Markdown prompt; rich clipboard output preserves images when supported
 
 ## Styling and Theming
 
@@ -398,13 +416,28 @@ export interface AssistantConfig {
   show: { sections: boolean; wrappers: boolean; components: boolean };
 }
 
+export interface PromptImageAttachment {
+  type: 'image';
+  mimeType: 'image/png';
+  dataUrl: string;
+}
+
+export interface ViewportInfo {
+  width: number;
+  height: number;
+  devicePixelRatio: number;
+}
+
 export interface PromptEntry {
   id: string;
   targetId: string;
   targetType: TargetType;
   url: string;
   text: string;
+  attachments?: PromptImageAttachment[];
+  viewport?: ViewportInfo;
   createdAt: number;
+  requestCount?: number;
 }
 ```
 

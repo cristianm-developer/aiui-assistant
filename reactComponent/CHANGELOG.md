@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.21] — 2026-09-11
+
+### Documentation
+
+- Add an English AI coding-agent setup prompt covering package installation,
+  canonical skills, initialization, metadata persistence, and production cleanup.
+- Align the root and published package READMEs with the latest AIUI Assistant workflow.
+
 ## [0.1.20] — 2026-09-11
 
 ### Added
