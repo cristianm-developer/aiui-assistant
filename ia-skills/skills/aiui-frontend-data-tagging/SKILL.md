@@ -33,18 +33,27 @@ Reglas:
   `data-component-id` adentro. No hace falta crear wrappers extra solo para
   tener identidad: `data-section-id` es para contexto independiente y
   `data-wrapper-id` para organización visual interna.
-- Un wrapper es un **container lógico visual**: cualquier elemento que agrupe
-  uno o más elementos/contenidos relacionados (por ejemplo, un `<span>` con
-  icono y texto, un grupo de botones o un bloque de contenido) es wrapper.
-  La etiqueta HTML no cambia esta clasificación. Los wrappers pueden
-  anidarse. El runtime puede detectar y asignar automáticamente
+- Un wrapper es cualquier elemento que contiene otros elementos o contenido y
+  no es la raíz de un componente reutilizable. Incluye agrupadores pequeños
+  como un `<span>` con icono y texto, además de grupos de botones, bloques de
+  contenido y containers de layout. La etiqueta HTML no cambia esta
+  clasificación. Los wrappers pueden anidarse. El runtime puede detectar y
+  asignar automáticamente
   `data-wrapper-id` cuando está activo "Capturar wrappers" o "Mostrar
   wrappers". No convertirlo en `data-section-id` salvo que sea una sección
   independiente, ni en `data-component-id` si es la raíz de un componente
   reutilizable.
+- Una sección es un wrapper contextual: un agrupador que envuelve una región
+  completa e independiente de la página/view. Se identifica con
+  `data-section-id`; puede contener wrappers y componentes. Conceptualmente
+  es un wrapper, pero se conserva como tipo `section` para mantener su
+  contexto regional.
+- La prioridad de clasificación es: raíz de componente (`data-component-id`),
+  sección contextual (`data-section-id`), wrapper genérico (`data-wrapper-id`)
+  y, por último, elemento individual.
 - "Mostrar secciones" y "Mostrar wrappers" son modos independientes: una
-  sección no debe incluirse en el inventario de wrappers y un wrapper no debe
-  presentarse como sección.
+  sección no debe incluirse en el inventario de wrappers genéricos y un
+  wrapper no debe presentarse como sección.
 - No re-tagear elementos que ya tienen `data-section-id`/`data-wrapper-id`/`data-component-id`
   al editarlos — preservar el id existente salvo que el usuario pida
   explícitamente renombrar el componente/sección (un id estable es lo que
@@ -54,9 +63,6 @@ Reglas:
   proyecto, **no** reemplazarlo — `data-wrapper-id`/`data-component-id`/
   `data-component-kind` son atributos adicionales, no sustituyen otros que
   el proyecto ya use para otros fines (testing, analytics, etc.).
-- No taguear elementos puramente presentacionales sin identidad propia
-  (un `<div>` que solo aplica `display: flex` para alinear dos botones no
-  es ni una sección ni un componente).
 - Componentes de terceros (una librería de UI externa que el proyecto solo
   consume, sin código fuente propio) no se tagean — el contrato aplica a
   componentes **del proyecto**, escritos por el equipo (o por la propia

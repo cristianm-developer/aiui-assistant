@@ -18,6 +18,11 @@ skill debe:
 - Taguear secciones, wrappers lógicos y componentes raíz con
   `data-section-id`, `data-wrapper-id`, `data-component-id` y
   `data-component-kind`, sin retagear ids existentes.
+- Crear o sincronizar una regla persistente en las instrucciones del agente
+  que ejecuta el init (`AGENTS.md`, `CLAUDE.md` o regla de Cursor), explicando
+  el contrato `data-*`, la diferencia entre section contextual y wrapper, la
+  prioridad de clasificación y que esta metadata es necesaria para que AIUI
+  detecte, agrupe y referencie targets correctamente.
 - Agregar `mountIaFrontRefAssistant()` una sola vez en el entry point adecuado.
 - Preguntar si se desea limpiar metadata en producción. Si se confirma:
   - Vite/Astro: usar `AIUIReactAssistCleanup()` en la configuración Vite.

@@ -157,7 +157,8 @@ salvo para recordar el punto puntual. Están acá para que no haya que
 
 | Atributo | Para qué |
 |---|---|
-| `data-wrapper-id` | secciones/divs |
+| `data-section-id` | wrapper contextual que envuelve una región independiente |
+| `data-wrapper-id` | cualquier elemento con contenido/descendientes que agrupa y no es raíz de componente |
 | `data-component-id` | componentes raíz |
 | `data-component-kind` | tipo del componente raíz (ej. `Button`, `Card`) — opcional, ver fase 8 |
 | (ninguno) | elementos individuales — ver fase 4 |

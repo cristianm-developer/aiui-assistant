@@ -87,7 +87,7 @@ npm run example:dev    # Start the example app
 
 ### Data attributes
 
-The component identifies elements using 3 attributes (all optional):
+The component identifies elements using 4 optional attributes:
 
 ```html
 <!-- Section identified as "hero" -->
@@ -100,7 +100,8 @@ The component identifies elements using 3 attributes (all optional):
 </section>
 ```
 
-**`data-wrapper-id`**: Identifies large sections (hero, footer, etc.)
+**`data-section-id`**: Identifies a contextual wrapper around an independent page/view region (hero, footer, sidebar, etc.)
+**`data-wrapper-id`**: Identifies any element that contains other elements/content and is not the root of a reusable component; wrappers may be nested
 **`data-component-id`**: Identifies reusable instances
 **`data-component-kind`**: Links to a config definition (e.g. "card", "button-primary")
 
@@ -108,9 +109,10 @@ The component identifies elements using 3 attributes (all optional):
 
 The `useTrackedTargets` hook scans the DOM:
 
-1. Looks for elements with `data-wrapper-id` → generates relative IDs
-2. Looks for elements with `data-component-id` → generates relative IDs
-3. Looks for "leaf" elements (elements with no text container) → generates IDs by selector
+1. Looks for elements with `data-section-id` → generates contextual section IDs
+2. Looks for elements with `data-wrapper-id` → generates wrapper IDs
+3. Looks for elements with `data-component-id` → generates relative IDs
+4. Looks for "leaf" elements (elements with no text container) → generates IDs by selector
 
 Every element is stored as a `TrackedTarget`:
 ```typescript

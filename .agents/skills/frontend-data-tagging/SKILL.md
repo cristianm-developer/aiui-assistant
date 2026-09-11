@@ -1,6 +1,6 @@
 ---
 name: frontend-data-tagging
-description: Usar SIEMPRE que se cree, genere o edite código de frontend (componentes, vistas, secciones, layouts) en un proyecto que tenga `ia-front-ref-assistant` como dependencia en package.json o un archivo `iafrontrefassistant.config.ts` en el root. Asegura que los wrappers de sección y los componentes raíz lleven los atributos data-wrapper-id / data-component-id / data-component-kind.
+description: Usar SIEMPRE que se cree, genere o edite código de frontend (componentes, vistas, secciones, layouts) en un proyecto que tenga `ia-front-ref-assistant` como dependencia en package.json o un archivo `iafrontrefassistant.config.ts` en el root. Asegura que los wrappers, las secciones contextuales y los componentes raíz lleven los atributos data-wrapper-id / data-section-id / data-component-id / data-component-kind.
 ---
 
 # Tagueo de frontend para Ia Front Ref Assistant
@@ -10,7 +10,8 @@ generes o edites debe respetar este contrato de atributos `data-*`:
 
 | Atributo | Va en | Valor |
 |---|---|---|
-| `data-wrapper-id` | Secciones/divs de layout (agrupadores visuales de una página: hero, footer, sidebar, etc.) | kebab-case, descriptivo del rol de esa sección en ESA página (ej. `hero`, `pricing-table`, `footer`) |
+| `data-section-id` | Wrapper contextual que envuelve una región independiente de una página/view (hero, footer, sidebar, etc.) | kebab-case, descriptivo del rol de esa región en ESA página (ej. `hero`, `pricing-table`, `footer`) |
+| `data-wrapper-id` | Cualquier elemento que contiene otros elementos o contenido y funciona como agrupador, sin importar si es `<div>`, `<span>` u otro tag | kebab-case, descriptivo del contenido/rol del agrupador (ej. `hero-content`, `title-group`) |
 | `data-component-id` | El elemento raíz de un componente reutilizable (no cada wrapper interno del componente, solo el nodo más externo) | kebab-case, único dentro de la página. Si hay más de una instancia del mismo componente en la misma vista, sufijo numérico: `cta-card-1`, `cta-card-2` |
 | `data-component-kind` | El mismo elemento raíz que lleva `data-component-id` | El **tipo** del componente, estable entre instancias — PascalCase igual al nombre del componente fuente (ej. `Button`, `CtaCard`, `Modal`). Dos instancias del mismo componente comparten `kind` pero no `id`. |
 
@@ -20,10 +21,20 @@ Reglas:
   `data-component-kind` — nunca los hijos internos del mismo componente
   (evita "capturar" ruido: el usuario de la herramienta quiere clickear el
   componente completo, no cada `<div>` interno).
-- Un `data-wrapper-id` puede contener uno o más `data-component-id` adentro
-  — no hace falta que cada componente esté envuelto en su propio wrapper
-  extra solo para tener id; el wrapper es para secciones de layout reales.
-- No re-tagear elementos que ya tienen `data-wrapper-id`/`data-component-id`
+- Un wrapper es cualquier elemento que contiene otros elementos o contenido y
+  no es la raíz de un componente reutilizable. Incluye agrupadores pequeños
+  como un `<span>` con icono y texto, además de grupos de botones, bloques de
+  contenido y containers de layout. La etiqueta HTML no cambia la
+  clasificación y los wrappers pueden anidarse.
+- Una sección es un wrapper contextual: un agrupador que envuelve una región
+  completa e independiente de la página/view. Se identifica con
+  `data-section-id`, no con `data-wrapper-id`; puede contener wrappers y
+  componentes. Una sección también es conceptualmente un wrapper, pero se
+  conserva como tipo `section` para mantener su contexto regional.
+- La prioridad de clasificación es: raíz de componente (`data-component-id`),
+  sección contextual (`data-section-id`), wrapper genérico (`data-wrapper-id`)
+  y, por último, elemento individual.
+- No re-tagear elementos que ya tienen `data-section-id`/`data-wrapper-id`/`data-component-id`
   al editarlos — preservar el id existente salvo que el usuario pida
   explícitamente renombrar el componente/sección (un id estable es lo que
   permite que las conversaciones sobre "el cta-card" sigan siendo válidas
@@ -32,9 +43,6 @@ Reglas:
   proyecto, **no** reemplazarlo — `data-wrapper-id`/`data-component-id`/
   `data-component-kind` son atributos adicionales, no sustituyen otros que
   el proyecto ya use para otros fines (testing, analytics, etc.).
-- No taguear elementos puramente presentacionales sin identidad propia
-  (un `<div>` que solo aplica `display: flex` para alinear dos botones no
-  es ni una sección ni un componente).
 - Componentes de terceros (una librería de UI externa que el proyecto solo
   consume, sin código fuente propio) no se tagean — el contrato aplica a
   componentes **del proyecto**, escritos por el equipo (o por la propia

@@ -1,6 +1,6 @@
 ---
 name: init-ia-front-assistant
-description: Usar cuando el usuario pida inicializar, instalar, auditar o sincronizar `ia-front-ref-assistant` en este proyecto (frases tipo "instalá ia-front-ref-assistant", "inicializá el asistente de IA", "sincronizá el tagueo de componentes"). Instala el paquete si falta, crea/sincroniza `iafrontrefassistant.config.ts`, retagea vistas/componentes existentes con `data-wrapper-id`/`data-component-id`/`data-component-kind`, y agrega la llamada a `mountIaFrontRefAssistant()` si todavía no está.
+description: Usar cuando el usuario pida inicializar, instalar, auditar o sincronizar `ia-front-ref-assistant` en este proyecto (frases tipo "instalá ia-front-ref-assistant", "inicializá el asistente de IA", "sincronizá el tagueo de componentes"). Instala el paquete si falta, crea/sincroniza `iafrontrefassistant.config.ts`, crea o sincroniza una regla persistente del agente sobre el contrato de metadata, retagea vistas/componentes existentes con `data-section-id`/`data-wrapper-id`/`data-component-id`/`data-component-kind`, y agrega la llamada a `mountIaFrontRefAssistant()` si todavía no está.
 ---
 
 # Inicialización de ia-front-ref-assistant
@@ -73,17 +73,67 @@ Ejecutá estos pasos en orden:
    No sigas con el paso 5 hasta tener esto resuelto (con las respuestas
    del usuario, o con su confirmación explícita de que no hace falta
    `prePrompt` para este proyecto).
-5. Usá la skill `config-mapper` para crear (si no existe) o sincronizar
+5. Creá o sincronizá una **regla persistente para el agente que ejecuta el
+   init**, para que los futuros cambios de frontend mantengan el contrato de
+   metadata que AIUI necesita para detectar, agrupar y referenciar targets.
+   Detectá el archivo de instrucciones activo en este orden: `AGENTS.md` para
+   agentes compatibles con Agent Skills/Codex, `CLAUDE.md` para Claude Code,
+   o `.cursor/rules/aiui-assistant.mdc` para Cursor. Si no existe ninguno,
+   creá `AGENTS.md` en la raíz del proyecto consumidor.
+
+   Insertá o actualizá únicamente el bloque delimitado por estos marcadores,
+   sin reemplazar instrucciones existentes:
+
+   ```md
+   <!-- aiui-assistant:frontend-data-contract:start -->
+   ## AIUI frontend metadata contract
+
+   Cuando crees o edites frontend en este proyecto, agrega y conserva los
+   atributos `data-*` que permiten que `@cristianmpx/aiui-assistant` detecte
+   y referencie correctamente cada target:
+
+   - **Section contextual:** `data-section-id` identifica un wrapper que
+     envuelve una región completa e independiente de la página/view, como
+     hero, footer, sidebar o pricing. Una section es conceptualmente un
+     wrapper, pero se conserva como tipo `section` para mantener el contexto
+     regional.
+   - **Wrapper:** `data-wrapper-id` identifica cualquier elemento que
+     contiene otros elementos o contenido y no es la raíz de un componente
+     reutilizable. Aplica a cualquier tag (`div`, `span`, etc.), incluidos
+     agrupadores pequeños como icono + texto, grupos de botones y containers
+     de layout. Los wrappers pueden anidarse.
+   - **Component root:** `data-component-id` identifica únicamente el nodo
+     raíz de un componente reutilizable; `data-component-kind` contiene su
+     tipo estable (`PascalCase`). Nunca agregues esos atributos a los hijos
+     internos del componente.
+   - **Individual element:** un elemento hoja o contenido individual no
+     necesita metadata de agrupador si no es section, wrapper o component.
+
+   La prioridad de clasificación es: component root, section contextual,
+   wrapper genérico y, por último, elemento individual. Usa ids descriptivos
+   en kebab-case, únicos y estables dentro de la página. Conserva ids ya
+   existentes; no reemplaces `id`, `data-testid` ni atributos del proyecto.
+   No tagees componentes de terceros sin código fuente propio. Asegúrate de
+   que la metadata exista en el DOM renderizado, incluso en vistas dinámicas.
+   Sin esta metadata, AIUI no puede ofrecer una referencia precisa ni
+   agrupar correctamente sections, wrappers y componentes en el prompt.
+   <!-- aiui-assistant:frontend-data-contract:end -->
+   ```
+
+   La operación debe ser idempotente: si el bloque ya existe, actualizá su
+   contenido sin duplicarlo y reportá el archivo modificado.
+6. Usá la skill `config-mapper` para crear (si no existe) o sincronizar
    `iafrontrefassistant.config.ts` con los componentes, el theme y el
    `prePrompt` (con lo relevado en el paso 4) actuales del proyecto.
-6. Recorré el código fuente de frontend del proyecto (vistas, componentes)
+7. Recorré el código fuente de frontend del proyecto (vistas, componentes)
    y, usando las reglas de la skill `frontend-data-tagging`, agregá los
-   atributos `data-wrapper-id` / `data-component-id` / `data-component-kind`
+   atributos `data-section-id` / `data-wrapper-id` / `data-component-id` /
+   `data-component-kind`
    donde falten. No re-tagear lo que ya está tagueado. Priorizá los
    directorios típicos de componentes/vistas del proyecto (detectalos por
    convención: `src/components`, `src/views`, `src/pages`, `app/`, etc. —
    los que existan).
-7. **Agregá la llamada a `mountIaFrontRefAssistant()` si todavía no está.**
+8. **Agregá la llamada a `mountIaFrontRefAssistant()` si todavía no está.**
    Buscá si ya existe (grep de `mountIaFrontRefAssistant` o de
    `from 'ia-front-ref-assistant'`) — si ya está, no toques nada de este
    paso, solo confirmalo en el resumen. Si no está:
@@ -132,31 +182,32 @@ Ejecutá estos pasos en orden:
         punto de arranque de su app en vez de adivinar.
    2. Importá `mountIaFrontRefAssistant` desde `ia-front-ref-assistant` y
       `config` desde `iafrontrefassistant.config.ts` (creado/sincronizado
-      en el paso 5), y llamá `mountIaFrontRefAssistant(config)` una sola
+       en el paso 6), y llamá `mountIaFrontRefAssistant(config)` una sola
       vez en el punto encontrado. No hace falta importar ningún CSS —
       `mountIaFrontRefAssistant()` inyecta sus propios estilos.
    3. Es un cambio quirúrgico: agregá solo el/los import(s) y la línea de
       la llamada (o el componente chico + su uso, en los casos que lo
       necesitan), sin reordenar ni reformatear el resto del archivo.
-8. Al terminar, mostrá un resumen: si se instaló el paquete (y con qué
+9. Al terminar, mostrá un resumen: si se instaló el paquete (y con qué
    comando), cuántos wrappers/componentes se tagearon (y en qué archivos),
    cuántos ya estaban tagueados y se dejaron igual, el resumen que dejó
-   `config-mapper` sobre el config (incluido el `prePrompt` final), y en
-   qué archivo se agregó la llamada a `mountIaFrontRefAssistant()` (o si
-   ya estaba).
-9. Sugerí correr `npm run build`/`npm run dev` del proyecto consumidor para
+    `config-mapper` sobre el config (incluido el `prePrompt` final), en qué
+    archivo se agregó o actualizó la regla del agente, y en qué archivo se
+    agregó la llamada a `mountIaFrontRefAssistant()` (o si ya estaba).
+10. Sugerí correr `npm run build`/`npm run dev` del proyecto consumidor para
    confirmar que todo compila con los cambios (instalación de dependencia,
    atributos `data-*`, y la nueva llamada de montaje).
 
 Esta skill es **idempotente**: correrla dos veces seguidas no debe
-reinstalar el paquete si ya está (paso 2), no debe duplicar ids ni volver a
-taguear lo ya tagueado (paso 6 explícitamente dice "no re-tagear lo que ya
-está tagueado"), no debe duplicar entradas en el config (paso 5 delega en
+reinstalar el paquete si ya está (paso 2), no debe duplicar ni cambiar una
+regla existente fuera del bloque marcado, no debe duplicar ids ni volver a
+taguear lo ya tagueado (paso 7 explícitamente dice "no re-tagear lo que ya
+está tagueado"), no debe duplicar entradas en el config (paso 6 delega en
 `config-mapper`, que actualiza entradas existentes en vez de agregarlas de
 nuevo — y sobre el `prePrompt` puntualmente, si ya existe y el usuario no
 pidió cambiarlo en el paso 4, `config-mapper` lo deja tal cual, no lo
 regenera), y no debe agregar una segunda llamada a
-`mountIaFrontRefAssistant()` (paso 7 explícitamente chequea si ya está
+`mountIaFrontRefAssistant()` (paso 8 explícitamente chequea si ya está
 antes de tocar nada — y aunque no lo chequeara, la función misma es
 idempotente en tiempo de ejecución, ver su doc-comment).
 
@@ -167,7 +218,7 @@ idempotente en tiempo de ejecución, ver su doc-comment).
   `components: []`, `theme: []`) y reporta "0 componentes tagueados" sin
   error.
 - Proyecto muy grande (cientos de componentes) → recorrer por directorios
-  conocidos primero (paso 6) en vez de todo el repo, para no perder tiempo
+  conocidos primero (paso 7) en vez de todo el repo, para no perder tiempo
   en `node_modules`, `dist`, `.next`, etc. (excluir siempre esas carpetas).
 - El usuario no tiene skills/comandos propios detectables ni convenciones
   fijas que valga la pena citar siempre (proyecto chico, sin
@@ -178,14 +229,14 @@ idempotente en tiempo de ejecución, ver su doc-comment).
   union de literales) → no se puede derivar una lista cerrada de opciones;
   `config-mapper` no agrega `variants`/`sizes` para ese componente en ese
   caso (deja el array vacío/ausente), no inventa valores.
-- No hay ningún caso de "el paquete no aplica a este proyecto" — el paso 7
+- No hay ningún caso de "el paquete no aplica a este proyecto" — el paso 8
   cubre React, cualquier stack con bundler, y HTML sin build alguno. No
   bloquees el paso 2 preguntando o negándote a instalar por el framework
   detectado.
 - El install del paso 2 falla (sin acceso a la URL de git, red caída,
   permisos) → mostrar el error del gestor de paquetes tal cual y frenar
   ahí, sin seguir con el resto de los pasos.
-- No se encuentra un punto de arranque reconocible en el paso 7
+- No se encuentra un punto de arranque reconocible en el paso 8
   (estructura de carpetas no estándar, monorepo con múltiples apps) →
   preguntarle al usuario cuál es el archivo correcto en vez de adivinar o
   modificar el primer archivo que aparezca.
