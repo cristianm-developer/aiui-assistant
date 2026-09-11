@@ -2,7 +2,7 @@
 
 A framework-agnostic floating visual widget for working with AI coding assistants. It lets you capture, tag, and generate prompts for UI elements in real time — drop it into any web app to get started.
 
-![Version](https://img.shields.io/badge/version-0.1.19-blue)
+![Version](https://img.shields.io/badge/version-0.1.20-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## What is it?

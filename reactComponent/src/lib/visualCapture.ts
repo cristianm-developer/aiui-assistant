@@ -62,3 +62,21 @@ export async function captureElementImage(el: Element): Promise<string | null> {
     URL.revokeObjectURL(url);
   }
 }
+
+/**
+ * Downloads a capture through the browser's configured local Downloads folder.
+ * Browsers do not expose the absolute Windows path to page JavaScript, so the
+ * returned value is intentionally a portable path relative to Downloads.
+ */
+export function saveCaptureToDownloads(dataUrl: string, targetId: string): string {
+  const safeTarget = targetId.replace(/[^a-z0-9_-]+/gi, '-').replace(/^-+|-+$/g, '') || 'target';
+  const fileName = `aiui-capture-${safeTarget}-${Date.now()}.png`;
+  const link = document.createElement('a');
+  link.href = dataUrl;
+  link.download = fileName;
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  return `Downloads/${fileName}`;
+}

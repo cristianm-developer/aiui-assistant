@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.20] — 2026-09-11
+
+### Added
+
+- Save visual captures as local PNG downloads and include their relative paths in prompts.
+- Group copied prompts by origin, route, and viewport with Markdown formatting.
+- Separate pasted references from prompt content and support Markdown separators between prompts.
+
+### Changed
+
+- Improve prompt modal proportions, spacing, focus states, and visual hierarchy.
+- Preserve origin metadata once per grouped context while avoiding repeated route metadata.
+
 ## [0.1.19] — 2026-08-31
 
 ### Fixed

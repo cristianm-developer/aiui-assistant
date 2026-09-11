@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { formatPrompt, formatPromptForModel, formatQueueForClipboard, formatQueueForClipboardHTML, formatTargetReferenceJSON } from './promptFormat';
+import { formatPrompt, formatPromptForModel, formatQueueForClipboard, formatQueueForClipboardHTML, formatTargetReferenceJSON, mergePromptRequests } from './promptFormat';
 import type { PromptEntry } from './types';
 
 describe('formatPrompt', () => {
   it('arma el prompt base sin prePrompt', () => {
     expect(formatPrompt('hero/card[0]', 'https://x.com', 'hacelo más grande')).toBe(
-      'About hero/card[0] on route /: hacelo más grande'
+      'Origin: https://x.com\nRoute: /\nPrompt:\nAbout hero/card[0]: hacelo más grande'
     );
   });
 
@@ -17,13 +17,34 @@ describe('formatPrompt', () => {
       'Usa la skill frontend-component y la skill frontend-context.'
     );
     expect(result).toBe(
-      'Usa la skill frontend-component y la skill frontend-context.\n\nAbout hero/card[0] on route /: hacelo más grande'
+      'Usa la skill frontend-component y la skill frontend-context.\n\nOrigin: https://x.com\nRoute: /\nPrompt:\nAbout hero/card[0]: hacelo más grande'
     );
   });
 
   it('ignora un prePrompt vacío o solo espacios', () => {
-    expect(formatPrompt('id', 'url', 'texto', '')).toBe('About id on route /url: texto');
-    expect(formatPrompt('id', 'url', 'texto', '   ')).toBe('About id on route /url: texto');
+    expect(formatPrompt('id', 'url', 'texto', '')).toBe('Route: /url\nPrompt:\nAbout id: texto');
+    expect(formatPrompt('id', 'url', 'texto', '   ')).toBe('Route: /url\nPrompt:\nAbout id: texto');
+  });
+
+  it('incluye la ruta local de la captura guardada', () => {
+    expect(formatPrompt('hero', 'https://x.com/', 'ajustar', undefined, undefined, undefined, '/', 'Downloads/aiui-capture-hero.png'))
+      .toContain('Visual capture file: Downloads/aiui-capture-hero.png');
+  });
+
+  it('no repite origen ni ruta dentro de una referencia pegada', () => {
+    const result = formatPrompt(
+      'hero',
+      'http://localhost:5173/',
+      'revisar',
+      undefined,
+      'Frontend reference: cta-card\nOrigin: http://localhost:5173\nRoute: /\nComponent: CtaCard',
+      undefined,
+      '/',
+    );
+    expect(result).toContain('Origin: http://localhost:5173\nRoute: /\nReference:');
+    expect(result).toContain('Frontend reference: cta-card\nComponent: CtaCard');
+    expect(result).not.toContain('Reference:\nFrontend reference: cta-card\nOrigin:');
+    expect(result).not.toContain('Component: CtaCard\nRoute: /');
   });
 
   it('mantiene la captura fuera del texto y la convierte en parte multimodal', () => {
@@ -40,6 +61,15 @@ describe('formatPrompt', () => {
       { type: 'image_url', image_url: { url: 'data:image/png;base64,abc' } },
     ]);
   });
+
+  it('agrupa solicitudes sin repetir viewport ni cabecera del target', () => {
+    const first = formatPrompt('hero-v2', 'http://localhost:4321/', 'primero', undefined, undefined, { width: 1905, height: 919, devicePixelRatio: 1 });
+    const second = formatPrompt('hero-v2', 'http://localhost:4321/', 'segundo', undefined, undefined, { width: 1905, height: 919, devicePixelRatio: 1 });
+    const grouped = mergePromptRequests(first, second, 'hero-v2', '/');
+    expect(grouped.match(/Viewport:/g)).toHaveLength(1);
+    expect(grouped.match(/About hero-v2:/g)).toHaveLength(1);
+    expect(grouped).toContain('- primero\n- segundo');
+  });
 });
 
 describe('formatQueueForClipboard', () => {
@@ -48,7 +78,9 @@ describe('formatQueueForClipboard', () => {
       { id: '1', targetId: 'a', targetType: 'element', url: 'u', text: 'uno', createdAt: 1 },
       { id: '2', targetId: 'b', targetType: 'element', url: 'u', text: 'dos', createdAt: 2 },
     ];
-    expect(formatQueueForClipboard(entries)).toBe('uno\n\ndos');
+    expect(formatQueueForClipboard(entries)).toContain('- **Origin:** `unknown-origin`');
+    expect(formatQueueForClipboard(entries)).toContain('### Prompt\nuno');
+    expect(formatQueueForClipboard(entries)).toContain('### Prompt\ndos');
   });
 
   it('indica en texto plano cuando hay una captura adjunta', () => {
@@ -56,7 +88,7 @@ describe('formatQueueForClipboard', () => {
       id: '1', targetId: 'a', targetType: 'component', url: 'u', text: 'ajustar', createdAt: 1,
       attachments: [{ type: 'image', mimeType: 'image/png', dataUrl: 'data:image/png;base64,abc' }],
     }];
-    expect(formatQueueForClipboard(entries)).toContain('[Visual capture attached: 1 image]');
+    expect(formatQueueForClipboard(entries)).not.toContain('Visual capture attached');
   });
 
   it('incluye capturas en el formato HTML del portapapeles', () => {
@@ -65,6 +97,20 @@ describe('formatQueueForClipboard', () => {
       attachments: [{ type: 'image', mimeType: 'image/png', dataUrl: 'data:image/png;base64,abc' }],
     }];
     expect(formatQueueForClipboardHTML(entries)).toContain('<img src="data:image/png;base64,abc"');
+  });
+
+  it('agrupa por origen y ruta sin repetir el origen en cada prompt', () => {
+    const entries: PromptEntry[] = [
+      { id: '1', targetId: 'hero', targetType: 'component', url: 'http://localhost:5173/', text: 'Origin: http://localhost:5173\nRoute: /\nAbout hero: uno', createdAt: 1 },
+      { id: '2', targetId: 'footer', targetType: 'component', url: 'http://localhost:5173/', text: 'Origin: http://localhost:5173\nRoute: /\nAbout footer: dos', createdAt: 2 },
+      { id: '3', targetId: 'hero', targetType: 'component', url: 'http://localhost:5173/about', text: 'Origin: http://localhost:5173\nRoute: /about\nAbout hero: tres', createdAt: 3 },
+    ];
+    const result = formatQueueForClipboard(entries);
+    expect(result.match(/\*\*Origin:\*\* `http:\/\/localhost:5173`/g) ?? []).toHaveLength(2);
+    expect(result).toContain('- **Route:** `/`');
+    expect(result).toContain('### Prompt — `hero`\nuno\n\n---\n\n### Prompt — `footer`\ndos');
+    expect(result).toContain('- **Route:** `/about`');
+    expect(result).toContain('\n\n---\n\n## Context');
   });
 });
 
